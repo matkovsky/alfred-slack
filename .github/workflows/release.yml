@@ -1,5 +1,5 @@
-# Push a tag like "v1.0" → builds the workflow and publishes a GitHub release with the
-# .alfredworkflow attached. The version inside the workflow is taken from the tag.
+# Push a tag like "v1.2.3" → builds the workflow and publishes a GitHub release with the
+# .alfredworkflow attached. The Makefile derives the version from the tag (git describe).
 name: Release
 
 on:
@@ -14,18 +14,20 @@ jobs:
     runs-on: macos-latest # osascript, plutil and sips are macOS-only
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history + tags, so `git describe` sees the release tag
 
       - name: Test
         run: make test
 
       - name: Build
-        run: make package VERSION="${GITHUB_REF_NAME#v}"
+        run: make package
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            "build/Slack-${GITHUB_REF_NAME#v}.alfredworkflow" \
+            build/Slack-*.alfredworkflow \
             --title "$GITHUB_REF_NAME" \
             --generate-notes

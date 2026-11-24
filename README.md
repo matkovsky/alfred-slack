@@ -60,10 +60,12 @@ Push a version tag; GitHub Actions (`.github/workflows/release.yml`) runs the te
 `Slack-<version>.alfredworkflow` on a macOS runner and publishes it as a GitHub release:
 
 ```
-git tag v1.0 && git push origin v1.0
+git tag v1.2.3 && git push origin v1.2.3
 ```
 
-The workflow's version is taken from the tag (`v1.0` → `1.0`).
+The git tag is the single source of truth for the version (`v1.2.3` → `1.2.3`); it isn't
+written anywhere in the repo. Local builds of untagged commits get a `git describe` version
+like `1.2.3-4-gabc1234`, with `-dirty` for uncommitted changes.
 
 Everything is JavaScript for Automation (`src/slack.js`), with no dependencies.
 `osascript -l JavaScript src/slack.js dump-mpim` prints raw group-DM objects, to check

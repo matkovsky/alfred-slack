@@ -1,4 +1,7 @@
-VERSION   ?= 1.0
+# The git tag is the only place the version lives: v1.2.3 → 1.2.3.
+# Untagged commits build as e.g. 1.2.3-2-gabc1234, uncommitted changes add -dirty.
+VERSION   := $(shell git describe --tags --dirty --match 'v[0-9]*' 2>/dev/null | sed 's/^v//')
+VERSION   := $(or $(VERSION),0.0.0-dev)
 BUNDLE_ID := com.matkovsky.alfred-slack
 BUILD     := build/workflow
 SLACK_APP := /Applications/Slack.app

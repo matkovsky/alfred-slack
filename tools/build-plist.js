@@ -44,6 +44,7 @@ function link(to, modifiers, subtext) {
 
 function run(argv) {
   const [out, version] = argv;
+  if (!version) throw new Error('version argument is required (derived from the git tag by the Makefile)');
   const readme = $.NSString.stringWithContentsOfFileEncodingError('README.md', $.NSUTF8StringEncoding, null);
 
   const plist = {
@@ -52,7 +53,7 @@ function run(argv) {
     description: 'Jump to Slack channels, DMs and group DMs across workspaces',
     createdby: 'Peter Matkovsky',
     webaddress: 'https://github.com/matkovsky/alfred-slack',
-    version: version || '1.0',
+    version,
     readme: readme.isNil() ? '' : readme.js,
     disabled: false,
     objects: [

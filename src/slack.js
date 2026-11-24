@@ -6,6 +6,7 @@
 //   action <arg> run the action selected in a Script Filter (reads $action etc.)
 //   refresh      rebuild the cache for all workspaces with a token
 //   dump-mpim    debug: print raw group-DM objects (to check for custom names)
+//   emojify <t>  debug: render :shortcodes: in a text
 
 ObjC.import('Cocoa');
 ObjC.import('stdlib');
@@ -75,27 +76,35 @@ function fold(s) {
   return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
-const EMOJI = {
-  necktie: '👔', tada: '🎉', rocket: '🚀', fire: '🔥', star: '⭐', heart: '❤️', bulb: '💡', memo: '📝',
-  calendar: '📅', money_with_wings: '💸', moneybag: '💰', briefcase: '💼', computer: '💻', bug: '🐛',
-  wrench: '🔧', hammer: '🔨', gear: '⚙️', lock: '🔒', key: '🔑', bell: '🔔', loudspeaker: '📢', mega: '📣',
-  speech_balloon: '💬', eyes: '👀', wave: '👋', coffee: '☕', pizza: '🍕', beer: '🍺', beers: '🍻',
-  house: '🏠', office: '🏢', art: '🎨', books: '📚', book: '📖', chart_with_upwards_trend: '📈',
-  bar_chart: '📊', package: '📦', construction: '🚧', warning: '⚠️', white_check_mark: '✅',
-  x: '❌', zap: '⚡', sparkles: '✨', robot_face: '🤖', robot: '🤖', ghost: '👻', crown: '👑',
-  trophy: '🏆', dart: '🎯', paperclip: '📎', pushpin: '📌', mag: '🔍', link: '🔗', email: '📧',
-  phone: '📱', iphone: '📱', camera: '📷', movie_camera: '🎥', musical_note: '🎵', headphones: '🎧',
-  earth_africa: '🌍', earth_americas: '🌎', globe_with_meridians: '🌐', sunny: '☀️', rainbow: '🌈',
-  seedling: '🌱', evergreen_tree: '🌲', cat: '🐱', dog: '🐶', unicorn_face: '🦄', thumbsup: '👍',
-  '+1': '👍', ok_hand: '👌', raised_hands: '🙌', clap: '👏', muscle: '💪', brain: '🧠', handshake: '🤝',
-  family: '👪', busts_in_silhouette: '👥', bust_in_silhouette: '👤', moyai: '🗿', shield: '🛡️',
-  hourglass: '⌛', alarm_clock: '⏰', receipt: '🧾', shopping_trolley: '🛒', truck: '🚚',
-  red_circle: '🔴', large_green_circle: '🟢', large_blue_circle: '🔵', large_yellow_circle: '🟡',
-  flag_hu: '🇭🇺', hu: '🇭🇺', flag_gb: '🇬🇧', flag_us: '🇺🇸', flag_de: '🇩🇪',
-};
+// Emoji shortcodes → characters. Primary source is emoji.json, generated at build time from
+// iamcal/emoji-data (Slack's own shortcode set; see tools/build-emoji.js). Codes missing from
+// it fall back to macOS's ICU Unicode-name transform (":unicorn_face:" → "UNICORN FACE" → 🦄).
+// Anything else — e.g. custom workspace emoji — is left as ":code:".
+let emojiMap = null;
+
+function loadEmojiMap() {
+  if (!emojiMap) emojiMap = readJSON(env('emoji_map', scriptDir() + '/emoji.json'), null) || { e: {}, s: {} };
+  return emojiMap;
+}
+
+function emojiFromUnicodeName(code) {
+  const name = code.replace(/[_-]+/g, ' ').toUpperCase();
+  if (!/^[A-Z0-9 ]+$/.test(name)) return null;
+  const out = $('\\N{' + name + '}').stringByApplyingTransformReverse('Name-Any', false);
+  const ch = out.isNil() ? '' : out.js;
+  // Only accept real emoji, not e.g. ":smile:" → "⌣" (the "SMILE" math symbol).
+  return ch && !ch.includes('\\N{') && /\p{Extended_Pictographic}/u.test(ch) ? ch : null;
+}
 
 function emojify(s) {
-  return String(s || '').replace(/:([a-z0-9_+\-]+):/g, (m, code) => EMOJI[code] || m);
+  s = String(s || '');
+  if (!s.includes(':')) return s;
+  return s.replace(/:([a-z0-9_+\-]+):(?::skin-tone-([2-6]):)?/g, (m, code, tone) => {
+    const map = loadEmojiMap();
+    if (tone && map.s[code]) return map.s[code][tone - 2];
+    const ch = map.e[code] || emojiFromUnicodeName(code);
+    return ch ? ch : m;
+  });
 }
 
 // ───────────────────────── Alfred output ─────────────────────────
@@ -645,6 +654,7 @@ function run(argv) {
     case 'action': return doAction(query);
     case 'refresh': return refreshAll();
     case 'dump-mpim': return dumpMpim();
+    case 'emojify': return emojify(query);
     default: return 'usage: slack.js filter|token|input|action|refresh|dump-mpim [query]';
   }
 }

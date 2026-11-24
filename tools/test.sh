@@ -45,4 +45,12 @@ expect "no match → ⌘K fallback per workspace" "Search kuix for “zzqx” | 
 Search Creative Factory for “zzqx” | ⌘K in Slack (Creative Factory)
 Search Acme for “zzqx” | ⌘K in Slack (Acme)" "$(titles zzqx)"
 
+# emojify <text> [map] → rendered text (map "" = no map, only the macOS Unicode-name fallback)
+emojify() { emoji_map="${2-${EMOJI_MAP:-build/emoji.json}}" /usr/bin/osascript -l JavaScript src/slack.js emojify "$1"; }
+
+expect "emoji from generated map, skin tones, flags" "👔 🎉 👍 👋🏼 🇭🇺 ✅" \
+  "$(emojify ':necktie: :tada: :+1: :wave::skin-tone-3: :flag-hu: :white_check_mark:')"
+expect "unknown/custom codes and times stay as text" ":kuix-logo: 10:30:00" "$(emojify ':kuix-logo: 10:30:00')"
+expect "Unicode-name fallback without the map" "👔 🦄 :tada: :smile:" "$(emojify ':necktie: :unicorn_face: :tada: :smile:' /nonexistent)"
+
 exit $fail

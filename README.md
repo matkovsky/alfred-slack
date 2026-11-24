@@ -68,5 +68,11 @@ written anywhere in the repo. Local builds of untagged commits get a `git descri
 like `1.2.3-4-gabc1234`, with `-dirty` for uncommitted changes.
 
 Everything is JavaScript for Automation (`src/slack.js`), with no dependencies.
+
+Emoji shortcodes in names and topics (`:necktie:` → 👔, `:wave::skin-tone-3:` → 👋🏼) are rendered
+from [iamcal/emoji-data](https://github.com/iamcal/emoji-data), the dataset Slack's shortcodes come
+from. The build downloads it and generates `emoji.json` (`tools/build-emoji.js`), so there is no
+emoji list to maintain; `make emoji` re-downloads it, and every release fetches the latest. Codes not
+in it fall back to macOS's Unicode character names; custom workspace emoji stay as `:code:`.
 `osascript -l JavaScript src/slack.js dump-mpim` prints raw group-DM objects, to check
 which field (if any) holds a custom group-DM name.

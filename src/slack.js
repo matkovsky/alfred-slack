@@ -7,6 +7,7 @@
 //   refresh      rebuild the cache for all workspaces with a token
 //   dump-mpim    debug: print raw group-DM objects (to check for custom names)
 //   emojify <t>  debug: render :shortcodes: in a text
+//   plain <t>    debug: Slack mrkdwn → plain text (knows one fake user, U1 = Anna)
 
 ObjC.import('Cocoa');
 ObjC.import('stdlib');
@@ -105,6 +106,26 @@ function emojify(s) {
     const ch = map.e[code] || emojiFromUnicodeName(code);
     return ch ? ch : m;
   });
+}
+
+// Slack "mrkdwn" (as used in topics, purposes and statuses) → plain text for Alfred:
+//   <https://x|label> → label   <https://x> → https://x   <mailto:a@b|a@b> → a@b
+//   <@U123> → @Name   <#C123|general> → #general   <!here> → @here   <!subteam^S1|@devs> → @devs
+//   &amp; &lt; &gt; → & < >, collapses newlines, then renders :emoji:.
+function plainText(s, usersById) {
+  s = String(s || '').replace(/<([^<>]*)>/g, (m, inner) => {
+    const [target, label] = inner.split('|');
+    if (target.startsWith('@')) {
+      const u = usersById && usersById[target.slice(1)];
+      return label || '@' + (u ? (u.profile && (u.profile.display_name || u.profile.real_name)) || u.real_name || u.name : target.slice(1));
+    }
+    if (target.startsWith('#')) return '#' + (label || target.slice(1));
+    if (target.startsWith('!')) return label || '@' + target.slice(1).split('^')[0];
+    if (label) return label;
+    return target.replace(/^mailto:/, '');
+  });
+  s = s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  return emojify(s.replace(/\s*\n+\s*/g, ' · ').replace(/[ \t]{2,}/g, ' ').trim());
 }
 
 // ───────────────────────── Alfred output ─────────────────────────
@@ -245,7 +266,7 @@ function refreshWorkspace(w, token) {
       title: (c.is_private ? '🔒 ' : '# ') + c.name,
       keys: [c.name, c.name.replace(/[-_]/g, ' ')],
       member: !!c.is_member || !!c.is_private,
-      details: emojify((c.topic && c.topic.value) || (c.purpose && c.purpose.value) || ''),
+      details: plainText((c.topic && c.topic.value) || (c.purpose && c.purpose.value) || '', byId),
       members: c.num_members || null,
     });
   });
@@ -288,7 +309,7 @@ function refreshWorkspace(w, token) {
       title: '@ ' + real + (display ? ' (' + display + ')' : ''),
       keys: [real, display, u.name, p.email].filter(Boolean),
       member: true,
-      details: [emojify(p.status_emoji ? p.status_emoji + ' ' + (p.status_text || '') : p.status_text || ''), p.title, u.tz_label]
+      details: [plainText(p.status_emoji ? p.status_emoji + ' ' + (p.status_text || '') : p.status_text || '', byId), p.title, u.tz_label]
         .filter(Boolean).join(' · '),
       self: u.id === w.selfId,
     });
@@ -655,6 +676,7 @@ function run(argv) {
     case 'refresh': return refreshAll();
     case 'dump-mpim': return dumpMpim();
     case 'emojify': return emojify(query);
+    case 'plain': return plainText(query, { U1: { name: 'anna', profile: { display_name: 'Anna' } } });
     default: return 'usage: slack.js filter|token|input|action|refresh|dump-mpim [query]';
   }
 }

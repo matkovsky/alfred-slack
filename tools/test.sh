@@ -53,4 +53,8 @@ expect "emoji from generated map, skin tones, flags" "👔 🎉 👍 👋🏼 �
 expect "unknown/custom codes and times stay as text" ":kuix-logo: 10:30:00" "$(emojify ':kuix-logo: 10:30:00')"
 expect "Unicode-name fallback without the map" "👔 🦄 :tada: :smile:" "$(emojify ':necktie: :unicorn_face: :tada: :smile:' /nonexistent)"
 
+plain() { emoji_map="${EMOJI_MAP:-build/emoji.json}" /usr/bin/osascript -l JavaScript src/slack.js plain "$1"; }
+expect "Slack link markup → plain text" "Board: https://app.asana.com/0/1 · docs here · ask @Anna in #general @here @devs · a@b.co · R&D <3 🚀" \
+  "$(plain $'Board: <https://app.asana.com/0/1>\n<https://x.co/d|docs here> · ask <@U1> in <#C9|general> <!here> <!subteam^S1|@devs> · <mailto:a@b.co|a@b.co> · R&amp;D &lt;3 :rocket:')"
+
 exit $fail

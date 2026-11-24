@@ -242,11 +242,20 @@ function refreshWorkspace(w, token) {
   });
 
   mine.filter(c => c.is_mpim).forEach(c => {
-    // Group DM names look like "mpdm-alice--bob--carol-1"; map handles back to people.
-    const handles = c.name.replace(/^mpdm-/, '').replace(/-\d+$/, '').split('--');
-    const people = handles.filter(h => fold(h) !== fold(w.selfName))
-      .map(h => byHandle[fold(h)] ? userName(byHandle[fold(h)]) : h);
+    // Unnamed group DMs are called "mpdm-alice--bob--carol-1": the participants' handles
+    // can be read straight from the name. Group DMs renamed in Slack carry the custom
+    // name in `name` instead, so their participants have to be fetched.
     const custom = customGroupName(c);
+    let memberIds = null, handles = null;
+    if (custom) {
+      const res = api(token, 'conversations.members', { channel: c.id, limit: 1000 });
+      memberIds = res.ok ? res.members : [];
+    } else {
+      handles = c.name.replace(/^mpdm-/, '').replace(/-\d+$/, '').split('--');
+    }
+    const people = memberIds
+      ? memberIds.filter(id => id !== w.selfId).map(id => byId[id] ? userName(byId[id]) : id)
+      : handles.filter(h => fold(h) !== fold(w.selfName)).map(h => byHandle[fold(h)] ? userName(byHandle[fold(h)]) : h);
     entries.push({
       kind: 'group',
       id: c.id,
@@ -254,8 +263,8 @@ function refreshWorkspace(w, token) {
       title: '👥 ' + (custom ? emojify(custom) : people.join(', ')),
       keys: [custom, people.join(' '), ...people].filter(Boolean),
       member: true,
-      details: custom ? 'with ' + people.join(', ') : '',
-      members: handles.length,
+      details: custom && people.length ? 'with ' + people.join(', ') : '',
+      members: memberIds ? memberIds.length : handles.length,
     });
   });
 
@@ -281,12 +290,10 @@ function refreshWorkspace(w, token) {
   return entries.length;
 }
 
-// Slack lets you name a group DM in the app; it isn't documented which API field
-// carries that name, so check the plausible ones and ignore the auto "mpdm-…" name.
+// Group DMs renamed in Slack ("Team Leads :necktie:") return that name in `name`;
+// unnamed ones keep the generated "mpdm-…" name.
 function customGroupName(c) {
-  const candidates = [c.properties && c.properties.name, c.display_name, c.custom_name,
-    c.name_normalized !== c.name ? c.name_normalized : null];
-  return candidates.find(n => n && typeof n === 'string' && !/^mpdm-/.test(n)) || null;
+  return c.name && !/^mpdm-/.test(c.name) ? c.name : null;
 }
 
 function downloadIcon(w) {

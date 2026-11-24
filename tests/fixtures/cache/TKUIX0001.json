@@ -1,0 +1,6 @@
+{"updated":__NOW__,"team":"TKUIX0001","entries":[
+{"kind":"channel","id":"C1","name":"design","title":"# design","keys":["design"],"member":true,"details":"topic","members":5},
+{"kind":"channel","id":"C1X","name":"design-review","title":"# design-review","keys":["design-review","design review"],"member":false,"details":"","members":3},
+{"kind":"group","id":"G1","name":"Anna Szabó, Bálint Kiss","title":"👥 Anna Szabó, Bálint Kiss","keys":["Anna Szabó Bálint Kiss","Anna Szabó","Bálint Kiss"],"member":true,"details":"","members":3},
+{"kind":"user","id":"U1","name":"Bálint Kiss","title":"@ Bálint Kiss","keys":["Bálint Kiss","bali"],"member":true,"details":"🏠 WFH"}
+]}

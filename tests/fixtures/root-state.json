@@ -1,0 +1,4 @@
+{"workspaces":{
+"TKUIX0001":{"id":"TKUIX0001","name":"kuix","domain":"kuix","url":"https://kuix.slack.com/","order":0},
+"TCREATIVE1":{"id":"TCREATIVE1","name":"Creative Factory","domain":"creative-factory","url":"https://creative-factory.slack.com/","order":1},
+"TACME0001":{"id":"TACME0001","name":"Acme","domain":"acme","url":"https://acme.slack.com/","order":2}}}

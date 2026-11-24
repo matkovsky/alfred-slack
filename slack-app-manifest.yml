@@ -1,0 +1,19 @@
+# Create the Slack app from this manifest (api.slack.com/apps → Create New App → From a manifest),
+# once per workspace, then Install to Workspace and copy the "User OAuth Token" (xoxp-…).
+display_information:
+  name: Alfred Slack
+  description: Personal Alfred workflow to jump to channels and DMs
+  background_color: "#4a154b"
+oauth_config:
+  scopes:
+    user:
+      - channels:read   # public channels
+      - groups:read     # private channels you're in
+      - mpim:read       # group DMs
+      - im:read         # DMs
+      - users:read      # people
+      - chat:write      # ⌃↩ quick message (optional — remove if not wanted)
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
